@@ -118,7 +118,7 @@ int so_fclose(SO_FILE *stream)
 			return rc;
 		}
 	}
-	
+
 	rc = close(stream->fd);
 	free(stream);
 
@@ -133,10 +133,11 @@ int so_fclose(SO_FILE *stream)
  */
 int so_fgetc(SO_FILE *stream)
 {
+	int rc;
 	char c;
 
 	if (stream->roffset == stream->rsize) {
-		int rc = load_rbuffer(stream);
+		rc = load_rbuffer(stream);
 		if (rc <= 0)
 			return SO_EOF;
 	}
@@ -154,8 +155,10 @@ int so_fgetc(SO_FILE *stream)
  */
 int so_fputc(int c, SO_FILE *stream)
 {
+	int rc;
+
 	if (stream->woffset == SO_BUFSIZE) {
-		int rc = unload_wbuffer(stream);
+		rc = unload_wbuffer(stream);
 		if (rc <= 0)
 			return SO_EOF;
 	}
@@ -175,6 +178,7 @@ size_t so_fread(void *ptr, size_t size, size_t nmemb, SO_FILE *stream)
 {
 	int i;
 	int offset = 0; /* offset in ptr */
+	int bytes_loaded;
 	size_t to_read; /* number of bytes to read */
 	size_t mem_read = 0; /* number of elements read succesfully */
 
@@ -184,9 +188,11 @@ size_t so_fread(void *ptr, size_t size, size_t nmemb, SO_FILE *stream)
 		while (bytes_read_now < size) {
 			if (stream->roffset == stream->rsize) {
 				/* Read buffer must be reloaded first: */
-				int bytes_loaded = load_rbuffer(stream);
-				if (bytes_loaded < 0)	return 0;
-				if (bytes_loaded == 0)	return mem_read;
+				bytes_loaded = load_rbuffer(stream);
+				if (bytes_loaded < 0)
+					return 0;
+				if (bytes_loaded == 0)
+					return mem_read;
 			}
 
 			/* Read either size bytes or all buffer: */
@@ -217,6 +223,7 @@ size_t so_fwrite(const void *ptr, size_t size, size_t nmemb, SO_FILE *stream)
 {
 	int i;
 	int offset = 0; /* offset in ptr */
+	int bytes_unloaded;
 	size_t to_write; /* number of bytes to write */
 	size_t mem_wrote = 0; /* number of elements wrote succesfully */
 
@@ -226,12 +233,13 @@ size_t so_fwrite(const void *ptr, size_t size, size_t nmemb, SO_FILE *stream)
 		while (bytes_wrote_now < size) {
 			if (stream->woffset == SO_BUFSIZE) {
 				/* Write buffer is full. Unload it first: */
-				int bytes_unloaded = unload_wbuffer(stream);
+				bytes_unloaded = unload_wbuffer(stream);
 				if (bytes_unloaded <= 0)	return 0;
 			}
 
-			/* Write either size bytes or as much as write buffer
-			has space for: */
+			/*
+			 * Write either size bytes or as much as write buffer
+			 * has space for: */
 			to_write = size;
 			if (SO_BUFSIZE - stream->woffset < to_write)
 				to_write = SO_BUFSIZE - stream->woffset;
@@ -257,14 +265,17 @@ size_t so_fwrite(const void *ptr, size_t size, size_t nmemb, SO_FILE *stream)
  */
 int so_fseek(SO_FILE *stream, long offset, int whence)
 {
-	// If anything is in write buffer, unload it:
+	int rc;
+
+	/* If anything is in write buffer, unload it: */
 	if (stream->woffset != 0) {
-		int rc = unload_wbuffer(stream);
-		if (rc <= 0)	return -1;
+		rc = unload_wbuffer(stream);
+		if (rc <= 0)
+			return -1;
 		stream->woffset = 0;
 	}
 
-	// Disregard bytes read in advance in read buffer:
+	/* Disregard bytes read in advance in read buffer: */
 	if (whence == SEEK_CUR)
 		offset -= (stream->rsize - stream->roffset);
 	stream->roffset = 0;
@@ -285,14 +296,12 @@ long so_ftell(SO_FILE *stream)
 	if (off == -1)	return -1;
 
 	/* If anything was read in advance, disregard it: */
-	if (stream->rsize != 0) {
+	if (stream->rsize != 0)
 		off = off - (stream->rsize - stream->roffset);
-	}
 
 	/* If anything is in write buffer, add those bytes: */
-	if (stream->woffset != 0) {
+	if (stream->woffset != 0)
 		off = off + stream->woffset;
-	}
 
 	return off;
 }
@@ -303,9 +312,12 @@ long so_ftell(SO_FILE *stream)
  */
 int so_fflush(SO_FILE *stream)
 {
+	int bytes_unloaded;
+
 	if (stream->woffset != 0) {
-		int bytes_unloaded = unload_wbuffer(stream);
-		if (bytes_unloaded <= 0)	return SO_EOF;
+		bytes_unloaded = unload_wbuffer(stream);
+		if (bytes_unloaded <= 0)
+			return SO_EOF;
 	}
 
 	return 0;
@@ -345,9 +357,11 @@ int so_ferror(SO_FILE *stream)
 SO_FILE *so_popen(const char *command, const char *type)
 {
 	int rc;
+	SO_FILE *stream;
 
-	SO_FILE *stream = (SO_FILE *) calloc(1, sizeof(SO_FILE));
-	if (stream == NULL)	return NULL;
+	stream = (SO_FILE *) calloc(1, sizeof(SO_FILE));
+	if (stream == NULL)
+		return NULL;
 
 	if (strcmp(type, "r") == 0) {
 		stream->flags = O_RDONLY;
@@ -395,7 +409,8 @@ SO_FILE *so_popen(const char *command, const char *type)
 
 			/* Launch command */
 			rc = execl("/bin/sh", "sh", "-c", command, (char*)0);
-			if (rc)	return NULL;
+			if (rc)
+				return NULL;
 
 			break;
 		default:
@@ -438,7 +453,8 @@ int so_pclose(SO_FILE *stream)
 	close(fd);
 
 	rc = waitpid(pid, &status, 0);
-	if (rc < 0)	return -1;
+	if (rc < 0)
+		return -1;
 
 	return 0;
 }
