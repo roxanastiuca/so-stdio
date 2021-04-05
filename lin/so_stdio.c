@@ -234,12 +234,13 @@ size_t so_fwrite(const void *ptr, size_t size, size_t nmemb, SO_FILE *stream)
 			if (stream->woffset == SO_BUFSIZE) {
 				/* Write buffer is full. Unload it first: */
 				bytes_unloaded = unload_wbuffer(stream);
-				if (bytes_unloaded <= 0)	return 0;
+				if (bytes_unloaded <= 0)
+					return 0;
 			}
 
-			/*
-			 * Write either size bytes or as much as write buffer
-			 * has space for: */
+			/* Write either size bytes or as much as write buffer
+			 * has space for:
+			 */
 			to_write = size;
 			if (SO_BUFSIZE - stream->woffset < to_write)
 				to_write = SO_BUFSIZE - stream->woffset;
@@ -266,6 +267,7 @@ size_t so_fwrite(const void *ptr, size_t size, size_t nmemb, SO_FILE *stream)
 int so_fseek(SO_FILE *stream, long offset, int whence)
 {
 	int rc;
+	int off;
 
 	/* If anything is in write buffer, unload it: */
 	if (stream->woffset != 0) {
@@ -281,7 +283,7 @@ int so_fseek(SO_FILE *stream, long offset, int whence)
 	stream->roffset = 0;
 	stream->rsize = 0;
 
-	int off = lseek(stream->fd, offset, whence);
+	off = lseek(stream->fd, offset, whence);
 	return (off == -1) ? -1 : 0;
 }
 
@@ -291,9 +293,12 @@ int so_fseek(SO_FILE *stream, long offset, int whence)
  */
 long so_ftell(SO_FILE *stream)
 {
+	int off;
+
 	/* Do a lseek from current position: */
-	int off = lseek(stream->fd, 0, SEEK_CUR);
-	if (off == -1)	return -1;
+	off = lseek(stream->fd, 0, SEEK_CUR);
+	if (off == -1)
+		return -1;
 
 	/* If anything was read in advance, disregard it: */
 	if (stream->rsize != 0)
@@ -372,58 +377,58 @@ SO_FILE *so_popen(const char *command, const char *type)
 		free(stream);
 		return NULL;
 	}
-	
+
 	/* Create pipe: */
 	int fds[2];
+
 	rc = pipe(fds);
 	if (rc != 0) {
 		free(stream);
 		return NULL;
 	}
 
-	if (stream->flags == O_RDONLY) {
+	if (stream->flags == O_RDONLY)
 		stream->fd = fds[PIPE_READ];
-	} else {
+	else
 		stream->fd = fds[PIPE_WRITE];
-	}
 
 	/* Create process: */
 	int pid = fork();
+
 	switch (pid) {
-		case -1:
-			/* Fork failed. */
+	case -1:
+		/* Fork failed. */
+		close(fds[PIPE_READ]);
+		close(fds[PIPE_WRITE]);
+		free(stream);
+
+		return NULL;
+	case 0:
+		/* Child process */
+		if (stream->flags == O_RDONLY) {
 			close(fds[PIPE_READ]);
+			dup2(fds[PIPE_WRITE], STDOUT_FILENO);
+		} else {
 			close(fds[PIPE_WRITE]);
-			free(stream);
+			dup2(fds[PIPE_READ], STDIN_FILENO);
+		}
 
+		/* Launch command */
+		rc = execl("/bin/sh", "sh", "-c", command, (char *)0);
+		if (rc)
 			return NULL;
-		case 0:
-			/* Child process */
-			if (stream->flags == O_RDONLY) {
-				close(fds[PIPE_READ]);
-				dup2(fds[PIPE_WRITE], STDOUT_FILENO);
-			} else {
-				close(fds[PIPE_WRITE]);
-				dup2(fds[PIPE_READ], STDIN_FILENO);
-			}
 
-			/* Launch command */
-			rc = execl("/bin/sh", "sh", "-c", command, (char*)0);
-			if (rc)
-				return NULL;
+		break;
+	default:
+		/* Parent process */
+		stream->pid = pid;
 
-			break;
-		default:
-			/* Parent process */
-			stream->pid = pid;
+		if (stream->flags == O_RDONLY)
+			close(fds[PIPE_WRITE]);
+		else
+			close(fds[PIPE_READ]);
 
-			if (stream->flags == O_RDONLY) {
-				close(fds[PIPE_WRITE]);
-			} else {
-				close(fds[PIPE_READ]);
-			}
-
-			break;
+		break;
 	}
 
 	return stream;
