@@ -69,7 +69,9 @@ SO_FILE *so_fopen(const char *pathname, const char *mode)
  */
 int load_rbuffer(SO_FILE *stream)
 {
-	int bytes_read = read(stream->fd, stream->rbuffer, SO_BUFSIZE);
+	int bytes_read;
+
+	bytes_read = read(stream->fd, stream->rbuffer, SO_BUFSIZE);
 	if (bytes_read <= 0) {
 		stream->rerror = SO_EOF;
 		return bytes_read;
@@ -88,7 +90,9 @@ int load_rbuffer(SO_FILE *stream)
  */
 int unload_wbuffer(SO_FILE *stream)
 {
-	int bytes_wrote = xwrite(stream->fd, stream->wbuffer, stream->woffset);
+	int bytes_wrote;
+
+	bytes_wrote = xwrite(stream->fd, stream->wbuffer, stream->woffset);
 	stream->woffset = 0;
 
 	if (bytes_wrote <= 0) {
@@ -133,7 +137,8 @@ int so_fgetc(SO_FILE *stream)
 
 	if (stream->roffset == stream->rsize) {
 		int rc = load_rbuffer(stream);
-		if (rc <= 0)	return SO_EOF;
+		if (rc <= 0)
+			return SO_EOF;
 	}
 
 	c = stream->rbuffer[stream->roffset];
@@ -151,7 +156,8 @@ int so_fputc(int c, SO_FILE *stream)
 {
 	if (stream->woffset == SO_BUFSIZE) {
 		int rc = unload_wbuffer(stream);
-		if (rc <= 0)	return SO_EOF;
+		if (rc <= 0)
+			return SO_EOF;
 	}
 
 	stream->wbuffer[stream->woffset] = (char) c;
