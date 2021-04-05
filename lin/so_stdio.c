@@ -24,9 +24,12 @@ typedef struct _so_file {
  * Description: opens a file in a given mode.
  * Return: stream/NULL if anything fails (memory allocation, file open).
  */
-SO_FILE *so_fopen(const char *pathname, const char *mode) {
+SO_FILE *so_fopen(const char *pathname, const char *mode)
+{
 	SO_FILE *stream = (SO_FILE *) calloc(1, sizeof(SO_FILE));
-	if (stream == NULL)	return NULL;
+
+	if (stream == NULL)
+		return NULL;
 
 	if (strcmp(mode, "r") == 0) {
 		stream->fd = open(pathname, O_RDONLY);
@@ -64,7 +67,8 @@ SO_FILE *so_fopen(const char *pathname, const char *mode) {
  * Description: loads read buffer with data from file.
  * Return: number of bytes read/negative number if read fails.
  */
-int load_rbuffer(SO_FILE *stream) {
+int load_rbuffer(SO_FILE *stream)
+{
 	int bytes_read = read(stream->fd, stream->rbuffer, SO_BUFSIZE);
 	if (bytes_read <= 0) {
 		stream->rerror = SO_EOF;
@@ -82,7 +86,8 @@ int load_rbuffer(SO_FILE *stream) {
  * Description: unloads data from write buffer to file.
  * Return: number of bytes wrote/0 or negative number if write fails.
  */
-int unload_wbuffer(SO_FILE *stream) {
+int unload_wbuffer(SO_FILE *stream)
+{
 	int bytes_wrote = xwrite(stream->fd, stream->wbuffer, stream->woffset);
 	stream->woffset = 0;
 
@@ -98,7 +103,8 @@ int unload_wbuffer(SO_FILE *stream) {
  * Description: unloads buffers, closes file and frees memory for a stream.
  * Return: 0 for no error/SO_EOF.
  */
-int so_fclose(SO_FILE *stream) {
+int so_fclose(SO_FILE *stream)
+{
 	int rc;
 
 	if (stream->woffset != 0) {
@@ -121,7 +127,8 @@ int so_fclose(SO_FILE *stream) {
  read buffer.
  * Return: the character read/SO_EOF.
  */
-int so_fgetc(SO_FILE *stream) {
+int so_fgetc(SO_FILE *stream)
+{
 	char c;
 
 	if (stream->roffset == stream->rsize) {
@@ -140,7 +147,8 @@ int so_fgetc(SO_FILE *stream) {
  the buffer, but if write buffer is full, it must unload it first.
  * Return: the character wrote/SO_EOF.
  */
-int so_fputc(int c, SO_FILE *stream) {
+int so_fputc(int c, SO_FILE *stream)
+{
 	if (stream->woffset == SO_BUFSIZE) {
 		int rc = unload_wbuffer(stream);
 		if (rc <= 0)	return SO_EOF;
@@ -157,7 +165,8 @@ int so_fputc(int c, SO_FILE *stream) {
  read bytes to ptr.
  * Return: number of elements read/SO_EOF.
  */
-size_t so_fread(void *ptr, size_t size, size_t nmemb, SO_FILE *stream) {
+size_t so_fread(void *ptr, size_t size, size_t nmemb, SO_FILE *stream)
+{
 	int i;
 	int offset = 0; /* offset in ptr */
 	size_t to_read; /* number of bytes to read */
@@ -198,7 +207,8 @@ size_t so_fread(void *ptr, size_t size, size_t nmemb, SO_FILE *stream) {
  * Description: writes nmemb elements of given size from ptr to stream.
  * Return: number of elements succesfully wrote/SO_EOF.
  */
-size_t so_fwrite(const void *ptr, size_t size, size_t nmemb, SO_FILE *stream) {
+size_t so_fwrite(const void *ptr, size_t size, size_t nmemb, SO_FILE *stream)
+{
 	int i;
 	int offset = 0; /* offset in ptr */
 	size_t to_write; /* number of bytes to write */
@@ -239,7 +249,8 @@ size_t so_fwrite(const void *ptr, size_t size, size_t nmemb, SO_FILE *stream) {
  * Description: move file cursor position.
  * Return: 0 if succes/-1 fail.
  */
-int so_fseek(SO_FILE *stream, long offset, int whence) {
+int so_fseek(SO_FILE *stream, long offset, int whence)
+{
 	// If anything is in write buffer, unload it:
 	if (stream->woffset != 0) {
 		int rc = unload_wbuffer(stream);
@@ -261,7 +272,8 @@ int so_fseek(SO_FILE *stream, long offset, int whence) {
  * Description: get file cursor position.
  * Return: position/-1 if fail.
  */
-long so_ftell(SO_FILE *stream) {
+long so_ftell(SO_FILE *stream)
+{
 	/* Do a lseek from current position: */
 	int off = lseek(stream->fd, 0, SEEK_CUR);
 	if (off == -1)	return -1;
@@ -283,7 +295,8 @@ long so_ftell(SO_FILE *stream) {
  * Description: flush the contents of write buffer.
  * Return: 0/SO_EOF.
  */
-int so_fflush(SO_FILE *stream) {
+int so_fflush(SO_FILE *stream)
+{
 	if (stream->woffset != 0) {
 		int bytes_unloaded = unload_wbuffer(stream);
 		if (bytes_unloaded <= 0)	return SO_EOF;
@@ -295,7 +308,8 @@ int so_fflush(SO_FILE *stream) {
 /*
  * Description: get file descriptor.
  */
-int so_fileno(SO_FILE *stream) {
+int so_fileno(SO_FILE *stream)
+{
 	return stream->fd;
 }
 
@@ -303,7 +317,8 @@ int so_fileno(SO_FILE *stream) {
  * Description: check if EOF.
  * Return: 0 if not EOF/!=0 if EOF.
  */
-int so_feof(SO_FILE *stream) {
+int so_feof(SO_FILE *stream)
+{
 	return stream->rerror;
 }
 
@@ -311,7 +326,8 @@ int so_feof(SO_FILE *stream) {
  * Description: check if last operation resulted in an error.
  * Return: 0 if no error/!=0 if error.
  */
-int so_ferror(SO_FILE *stream) {
+int so_ferror(SO_FILE *stream)
+{
 	return (stream->rerror | stream->werror);
 }
 
@@ -320,7 +336,8 @@ int so_ferror(SO_FILE *stream) {
  executing the given command.
  * Return: stream that is either read-only or write-only/NULL if error.
  */
-SO_FILE *so_popen(const char *command, const char *type) {
+SO_FILE *so_popen(const char *command, const char *type)
+{
 	int rc;
 
 	SO_FILE *stream = (SO_FILE *) calloc(1, sizeof(SO_FILE));
@@ -396,7 +413,8 @@ SO_FILE *so_popen(const char *command, const char *type) {
  memory for stream opened through popen.
  * Return: 0 for no error/-1 error.
  */
-int so_pclose(SO_FILE *stream) {
+int so_pclose(SO_FILE *stream)
+{
 	int status, rc;
 	int pid = stream->pid;
 	int fd = stream->fd;
