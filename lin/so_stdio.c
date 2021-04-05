@@ -24,76 +24,76 @@ typedef struct _so_file {
  * Description: opens a file in a given mode.
  * Return: stream/NULL if anything fails (memory allocation, file open).
  */
-SO_FILE *so_fopen(const char *pathname, const char *mode) {
-	SO_FILE *stream = (SO_FILE *) calloc(1, sizeof(SO_FILE));
-	if (stream == NULL)	return NULL;
+// SO_FILE *so_fopen(const char *pathname, const char *mode) {
+// 	SO_FILE *stream = (SO_FILE *) calloc(1, sizeof(SO_FILE));
+// 	if (stream == NULL)	return NULL;
 
-	if (strcmp(mode, "r") == 0) {
-		stream->flags = O_RDONLY;
-	} else if (strcmp(mode, "r+") == 0) {
-		stream->flags = O_RDWR | O_CREAT;
-	} else if (strcmp(mode, "w") == 0) {
-		stream->flags = O_WRONLY | O_CREAT | O_TRUNC;
-	} else if (strcmp(mode, "w+") == 0) {
-		stream->flags = O_RDWR | O_CREAT | O_TRUNC;
-	} else if (strcmp(mode, "a") == 0) {
-		stream->flags = O_WRONLY | O_APPEND | O_CREAT;
-	} else if (strcmp(mode, "a+") == 0) {
-		stream->flags = O_RDWR | O_APPEND | O_CREAT;
-	} else {
-		/* Unknown mode */
-		free(stream);
-		return NULL;
-	}
-
-	stream->fd = open(pathname, stream->flags);
-	if (stream->fd < 0) {
-		free(stream);
-		return NULL;
-	}
-
-	return stream;
-}
-
-// SO_FILE *so_fopen(const char *pathname, const char *mode)
-// {
-// 	/* File descriptor for the SO_FILE structure. */
-// 	int fd;
-// 	SO_FILE *f;
-
-// 	if (strcmp(mode, "r") == 0)
-// 		fd = open(pathname, O_RDONLY);
-// 	else if (strcmp(mode, "r+") == 0)
-// 		fd = open(pathname, O_RDWR | O_CREAT);
-// 	else if (strcmp(mode, "w") == 0)
-// 		fd = open(pathname, O_WRONLY | O_CREAT | O_TRUNC);
-// 	else if (strcmp(mode, "w+") == 0)
-// 		fd = open(pathname, O_RDWR | O_CREAT | O_TRUNC);
-// 	else if (strcmp(mode, "a") == 0)
-// 		fd = open(pathname, O_WRONLY | O_APPEND | O_CREAT);
-// 	else if (strcmp(mode, "a+") == 0)
-// 		fd = open(pathname, O_RDWR | O_APPEND | O_CREAT);
-// 	else
+// 	if (strcmp(mode, "r") == 0) {
+// 		stream->flags = O_RDONLY;
+// 	} else if (strcmp(mode, "r+") == 0) {
+// 		stream->flags = O_RDWR | O_CREAT;
+// 	} else if (strcmp(mode, "w") == 0) {
+// 		stream->flags = O_WRONLY | O_CREAT | O_TRUNC;
+// 	} else if (strcmp(mode, "w+") == 0) {
+// 		stream->flags = O_RDWR | O_CREAT | O_TRUNC;
+// 	} else if (strcmp(mode, "a") == 0) {
+// 		stream->flags = O_WRONLY | O_APPEND | O_CREAT;
+// 	} else if (strcmp(mode, "a+") == 0) {
+// 		stream->flags = O_RDWR | O_APPEND | O_CREAT;
+// 	} else {
+// 		/* Unknown mode */
+// 		free(stream);
 // 		return NULL;
+// 	}
 
-// 	/* If open call failed. */
-// 	if (fd < 0)
+// 	stream->fd = open(pathname, stream->flags);
+// 	if (stream->fd < 0) {
+// 		free(stream);
 // 		return NULL;
+// 	}
 
-// 	f = (SO_FILE *)calloc(1, sizeof(SO_FILE));
-
-// 	if (f == NULL)
-// 		return NULL;
-
-// 	f->fd = fd;
-// 	f->read_cnt = SEEK_SET;
-// 	f->write_cnt = 0;
-// 	f->last_read_cnt = 0;
-// 	f->ferror = 0;
-// 	f->feof = 0;
-
-// 	return f;
+// 	return stream;
 // }
+
+SO_FILE *so_fopen(const char *pathname, const char *mode)
+{
+	/* File descriptor for the SO_FILE structure. */
+	int fd;
+	SO_FILE *f;
+
+	if (strcmp(mode, "r") == 0)
+		fd = open(pathname, O_RDONLY);
+	else if (strcmp(mode, "r+") == 0)
+		fd = open(pathname, O_RDWR | O_CREAT);
+	else if (strcmp(mode, "w") == 0)
+		fd = open(pathname, O_WRONLY | O_CREAT | O_TRUNC);
+	else if (strcmp(mode, "w+") == 0)
+		fd = open(pathname, O_RDWR | O_CREAT | O_TRUNC);
+	else if (strcmp(mode, "a") == 0)
+		fd = open(pathname, O_WRONLY | O_APPEND | O_CREAT);
+	else if (strcmp(mode, "a+") == 0)
+		fd = open(pathname, O_RDWR | O_APPEND | O_CREAT);
+	else
+		return NULL;
+
+	/* If open call failed. */
+	if (fd < 0)
+		return NULL;
+
+	f = (SO_FILE *)calloc(1, sizeof(SO_FILE));
+
+	if (f == NULL)
+		return NULL;
+
+	// f->fd = fd;
+	// f->read_cnt = SEEK_SET;
+	// f->write_cnt = 0;
+	// f->last_read_cnt = 0;
+	// f->ferror = 0;
+	// f->feof = 0;
+
+	return f;
+}
 
 /*
  * Description: loads read buffer with data from file.
