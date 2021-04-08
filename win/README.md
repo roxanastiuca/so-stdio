@@ -5,9 +5,8 @@ Grupa: 335CB
 
 ### Organizare
 Tipul SO_FILE descrie un fisier deschis si are urmatoarele campuri:
-- fd = file descriptor asociat fisierului;
-- flags = flag-uri de deschidere;
-- pid = ID-ul procesului pornit prin popen;
+- handle = file handler pentru fisier deschis;
+- process = informatia despre un proces lansat prin popen;
 - rbuffer = buffer pentru citire;
 - roffset = pozitia din buffer-ul de citire pana unde utilizatorul a citit
 efectiv;
@@ -46,7 +45,6 @@ asteapta terminarea procesului lansat de popen.
 
 ### Cum se compileaza si cum se ruleaza?
 **Creare biblioteca dinamica**:
-- Linux - make / make build;
 - Windows - nmake.
 
 ### Git
