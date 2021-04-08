@@ -54,7 +54,7 @@ SO_FILE *so_fopen(const char *pathname, const char *mode)
 			FILE_ATTRIBUTE_NORMAL, NULL);
 	} else if (strcmp(mode, "a") == 0) {
 		stream->handle = CreateFile(pathname,
-			GENERIC_READ | FILE_APPEND_DATA,
+			FILE_APPEND_DATA,
 			FILE_SHARE_READ | FILE_SHARE_WRITE,
 			NULL, OPEN_ALWAYS,
 			FILE_ATTRIBUTE_NORMAL, NULL);
@@ -442,10 +442,14 @@ SO_FILE *so_popen(const char *command, const char *type)
 
 	/* Set security attributes: */
 	ZeroMemory(&sa, sizeof(sa));
+	sa.nLength = sizeof(SECURITY_ATTRIBUTES);
 	sa.bInheritHandle = TRUE;
 
 	/* Init process info: */
 	ZeroMemory(&pi, sizeof(pi));
+	
+	/* Init startup info: */
+	GetStartupInfo(&si);
 
 	/* Create pipe: */
 	ret = CreatePipe(&rhandle, &whandle, &sa, 0);
@@ -461,13 +465,14 @@ SO_FILE *so_popen(const char *command, const char *type)
 	} else if (strcmp(type, "w") == 0) {
 		stream->handle = whandle;
 		RedirectHandle(&si, rhandle, STD_INPUT_HANDLE);
+		si.hStdInput = rhandle;
 		ret = SetHandleInformation(whandle, HANDLE_FLAG_INHERIT, 0);
 	}
 
 	/* Create process: */
 	ret = CreateProcess(
 		NULL,
-		(LPSTR) commArgs,
+		command,
 		NULL,
 		NULL,
 		TRUE,
@@ -478,11 +483,10 @@ SO_FILE *so_popen(const char *command, const char *type)
 		&pi
 		);
 
-	/* Close unused ends of pipes: */
 	if (strcmp(type, "r") == 0)
-		CloseHandle(rhandle);
-	else if (strcmp(type, "w") == 0)
 		CloseHandle(whandle);
+	else
+		CloseHandle(rhandle);
 
 	if (ret == 0) {
 		free(stream);
@@ -516,16 +520,17 @@ int so_pclose(SO_FILE *stream)
 	}
 
 	free(stream);
+
 	rc = CloseHandle(handle);
-	if (rc == FALSE)
-		return -1;
 
 	ret = WaitForSingleObject(pi.hProcess, INFINITE);
-	if (ret == WAIT_FAILED)
+	if (ret == WAIT_FAILED) {
+		printf("last error %d\n", GetLastError());
 		return -1;
+	}
 
-	CloseHandle(pi.hThread);
 	CloseHandle(pi.hProcess);
+	CloseHandle(pi.hThread);
 
 	return 0;
 }
